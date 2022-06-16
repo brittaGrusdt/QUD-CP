@@ -1,0 +1,224 @@
+---
+title: "analysis"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(bayesplot)
+library(brms)
+library(here)
+library(latex2exp)
+library(tidybayes)
+library(tidytext)
+library(tidyverse)
+source(here("R", "utils.R"))
+theme_set(theme_minimal(base_size=12) + theme(legend.position = "top"))
+
+save_plots = TRUE
+target_dir = here("results")
+plot_dir = file.path(target_dir, "figs")
+if(!file.exists(plot_dir)) dir.create(plot_dir, recursive = TRUE)
+```
+
+
+## Load cleaned data 
+
+Data was cleaned (see script clean_data.R) according to predefined exclusion 
+criteria.
+
+```{r, message=FALSE}
+cleaned_data = read_csv(here("results", "data_cleaned.csv"))
+```
+## Meta information about participants
+
+```{r, meta, echo=FALSE}
+data.meta <- cleaned_data %>% 
+  distinct_at(vars(c(submission_id)), .keep_all = T) %>%
+  mutate(education=as_factor(education), gender=as_factor(gender))
+
+data.meta$gender %>% summary()
+data.meta$education %>% summary()
+print("age:")
+data.meta$age %>% summary()
+print("timeSpent:")
+data.meta$timeSpent %>% summary()
+```
+
+## Plot critical trials
+
+```{r, data-critical, echo=FALSE}
+data.critical = data_critical_trials(cleaned_data)
+```
+
+Data With 95%-bootstrap confidence intervals
+
+```{r, boostrap-samples, echo = FALSE}
+N = 1000
+n_participants = data.critical$submissionID %>% unique() %>% length()
+
+df.critical.boot <- data.critical %>% 
+  dplyr::select(submissionID, picPair, picPair.long, picPair.short, question, response) %>% 
+  mutate(response = case_when(response == "exhaustive" ~ 1, T ~ 0))
+
+bootstrapped_cis = bootstrap_rate_exhaustive(df.critical.boot)
+```
+
+1. across all 4 picture combinations 
+
+```{r}
+QUDs = c(neutral="Which blocks do you think will fall?",
+         ifp = "What happens if the 'antecedent' block falls?",
+         willq = "Will the 'consequent' block fall?")
+
+data.critical %>%
+  ggplot(aes(fill=response, y=question)) + 
+  geom_bar(position=position_dodge(preserve = 'single')) +
+  scale_y_discrete(breaks=names(QUDs), labels = QUDs) + 
+  labs(y="Ann's question")
+
+# same plot with exhaustive-picture selection ratios instead of absolute numbers
+#df.critical.rate %>%
+bootstrapped_cis$rate_qud %>%   
+  ggplot(aes(x=rate_exhaustive, y=question)) + 
+  geom_bar(stat="identity") + 
+  geom_errorbar(aes(xmin=ci.low, xmax=ci.up)) +
+  geom_text(aes(label=round(rate_exhaustive, 2)), hjust=1, color='white') +
+  scale_y_discrete(breaks=names(QUDs), labels = QUDs) + 
+  labs(y="Ann's question", x="selection rate exhaustive picture")
+```
+
+2. separately for each picture combination
+
+```{r}
+# barplot
+df.plots = bootstrapped_cis$rate_qud_picPair %>% 
+  mutate(condition = factor(picPair), 
+         question = as.character(question), 
+         question = case_when(question == "willq" ~ "will-q",
+                              question == "ifp" ~ "if-p", 
+                              T ~ question),
+         question = factor(question, levels = c("if-p", "neutral", "will-q")))
+
+p1 = df.plots %>% 
+  ggplot(aes(x=rate_exhaustive, y=question)) + 
+  geom_bar(stat="identity") + 
+  geom_errorbar(aes(xmin=ci.low, xmax=ci.up)) +
+  geom_vline(aes(xintercept = 0.5), color='darkgreen', linetype='dashed') +
+  geom_text(aes(label=round(rate_exhaustive, 2)), hjust=1, color='white') +
+  facet_wrap(~condition) + 
+  labs(x="selection rate exhaustive situation", y = "QUD")
+p1
+
+# simple line plot
+pd = position_dodge(0.25)
+df.p2 = df.plots %>% group_by(picPair)
+legend_ord <- levels(with(df.p2, reorder(picPair, rate_exhaustive)))
+
+p2 = df.p2 %>% 
+  ggplot(aes(x = question, y = rate_exhaustive, color = picPair,
+             group = picPair)) + 
+  geom_point(position=pd) +
+  geom_line(position=pd) +
+  geom_errorbar(position=pd, aes(ymin=ci.low, ymax=ci.up), 
+                width=0.25, alpha=0.5) +
+  scale_y_continuous(limits = c(0,1)) +
+  scale_color_brewer(palette = "Set2", name="stimulus", breaks=legend_ord) +
+  guides(color = guide_legend(nrow = 4, reverse = T)) +
+  labs(y="selection rate exhaustive situation", x = "QUD") +
+  theme(legend.position="right")
+p2
+
+if(save_plots) {
+  fn_p1 <- file.path(plot_dir_specific, "selection-rates-bars.pdf")
+  ggsave(fn_p1, p1, width=7, height=4)
+  
+  fn_p2 <- file.path(plot_dir, "selection-rates-points.jpg")
+  ggsave(fn_p2, p2, width=6, height=3)
+}
+```
+
+# Bayesian regression model
+
+```{r, results='hide'}
+model_path = here(target_dir, "brms-model.rds")
+df.critical.model = data.critical %>% 
+  rename(picPair.full = picPair, picPair = picPair.short)
+
+if(file.exists(model_path)) {
+  fit <- readRDS(model_path)
+} else {
+  fit <-
+    brm(data = df.critical.model,
+        family = bernoulli,
+        y ~ 1 + picPair * question + (1 + picPair + question|submissionID),
+        iter = 4000, chains = 4, cores = 4)
+  saveRDS(fit, file=model_path)
+}
+fixef(fit)
+pp_check(fit)
+mcmc_plot(fit)
+mcmc_areas(fit, regex_pars = "b_picPair")
+mcmc_areas(fit, regex_pars = "b_question")
+pp_check(fit, type = "stat", stat = 'mean')
+```
+
+## Testing hypotheses
+
+1. separately for each picture pair
+
+Reference category: picPair:A, question: neutral
+
+```{r, regression-hypotheses}
+h_A = hypothesis(fit, "questionifp < questionwillq", class = "b")
+h_B = hypothesis(fit, "questionifp + picPairB:questionifp < questionwillq + picPairB:questionwillq", class = "b")
+h_C = hypothesis(fit, "questionifp + picPairC:questionifp < questionwillq + picPairC:questionwillq", class = "b")
+h_D = hypothesis(fit, "questionifp + picPairD:questionifp < questionwillq + picPairD:questionwillq", class = "b")
+
+h_A$hypothesis[c("Estimate", "Post.Prob", "CI.Lower", "CI.Upper", "Evid.Ratio")]
+h_B$hypothesis[c("Estimate", "Post.Prob", "CI.Lower", "CI.Upper", "Evid.Ratio")]
+h_C$hypothesis[c("Estimate", "Post.Prob", "CI.Lower", "CI.Upper", "Evid.Ratio")]
+h_D$hypothesis[c("Estimate", "Post.Prob", "CI.Lower", "CI.Upper", "Evid.Ratio")]
+```
+
+2. Across picture pairs
+
+```{r}
+samples = fit %>% spread_draws(b_Intercept, b_questionifp, b_questionwillq,
+               b_picPairB, b_picPairC, b_picPairD,
+               `b_picPairB:questionifp`, `b_picPairC:questionifp`,
+               `b_picPairD:questionifp`, `b_picPairB:questionwillq`,
+               `b_picPairC:questionwillq`, `b_picPairD:questionwillq`) %>%
+  mutate(
+    ifp_A = b_Intercept + b_questionifp,
+    ifp_B = b_Intercept + b_questionifp + b_picPairB + `b_picPairB:questionifp`,
+    ifp_C = b_Intercept + b_questionifp + b_picPairC + `b_picPairC:questionifp`,
+    ifp_D = b_Intercept + b_questionifp + b_picPairD + `b_picPairD:questionifp`,
+    willq_A = b_Intercept + b_questionwillq,
+    willq_B = b_Intercept + b_questionwillq + b_picPairB + `b_picPairB:questionwillq`,
+    willq_C = b_Intercept + b_questionwillq + b_picPairC + `b_picPairC:questionwillq`,
+    willq_D = b_Intercept + b_questionwillq + b_picPairD + `b_picPairD:questionwillq`)
+
+coeffs = samples %>% 
+  transmute(questionifp = (ifp_A + ifp_B + ifp_C + ifp_D)/4,
+            questionwillq = (willq_A + willq_B + willq_C + willq_D)/4) %>% 
+  mutate(ifpsmaller = questionifp < questionwillq)
+
+tibble(ifp_smaller_willq = mean(coeffs$ifpsmaller))
+
+means = coeffs %>% summarize(mean_ifp = mean(questionifp),
+                             mean_willq = mean(questionwillq))
+
+p.mainquestion = coeffs %>% rowid_to_column() %>% 
+  pivot_longer(cols=c(questionifp, questionwillq)) %>%
+  ggplot(aes(x=name, y=value)) + 
+  geom_boxplot() +
+  labs(x = "estimated coefficient", y = "posterior samples") +
+  scale_x_discrete(labels = c(questionifp = parse(text=TeX("$\\hat{\\beta}_{ifp}$")), 
+                              questionwillq = parse(text=TeX("$\\hat{\\beta}_{willq}$"))))
+p.mainquestion
+if(save_plots) ggsave(file.path(plot_dir_specific, "main-effect-question.pdf"), 
+                      p.mainquestion, width=7, height=4)
+```
+
+
