@@ -130,7 +130,7 @@ p2 = df.p2 %>%
 p2
 
 if(save_plots) {
-  fn_p1 <- file.path(plot_dir_specific, "selection-rates-bars.pdf")
+  fn_p1 <- file.path(plot_dir, "selection-rates-bars.pdf")
   ggsave(fn_p1, p1, width=7, height=4)
   
   fn_p2 <- file.path(plot_dir, "selection-rates-points.jpg")
@@ -217,7 +217,7 @@ p.mainquestion = coeffs %>% rowid_to_column() %>%
   scale_x_discrete(labels = c(questionifp = parse(text=TeX("$\\hat{\\beta}_{ifp}$")), 
                               questionwillq = parse(text=TeX("$\\hat{\\beta}_{willq}$"))))
 p.mainquestion
-if(save_plots) ggsave(file.path(plot_dir_specific, "main-effect-question.pdf"), 
+if(save_plots) ggsave(file.path(plot_dir, "main-effect-question.pdf"), 
                       p.mainquestion, width=7, height=4)
 ```
 
