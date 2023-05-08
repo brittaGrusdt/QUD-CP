@@ -12,6 +12,7 @@ clean_data = function(data){
     mutate(correct = selected_pic == expected, n_correct = sum(correct)) %>% 
     distinct_at(vars(c(type, submission_id)), .keep_all = T)
   
+  # failing any criteria is sufficient to be removed
   submission_ids.out = controls %>% 
     filter(!(type == "control-random" & n_correct == n) &
            !(type == "control-physics" & n_correct >= n-1) &

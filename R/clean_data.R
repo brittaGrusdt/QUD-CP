@@ -1,4 +1,6 @@
 library(here)
+library(tidyverse)
+library(readr)
 source(here("R", "utils.R"))
 main_data <- read_csv(here("results", "results_67_communicationBlocks_BG.csv"))
 pilot_data <- read_csv(here("results", "results_67_communicationBlocks_BG_pilot.csv"))
