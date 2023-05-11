@@ -1,3 +1,7 @@
+This repository contains all code and data from our first Experiment in our paper 
+[`Testing the influence of QUDs on the occurrence of conditional perfection` ]([https://www.google.com](https://journals.linguisticsociety.org/proceedings/index.php/ELM/article/view/5413)).
+
+
 # Experiment
 
 1. Code Experiment
@@ -20,8 +24,7 @@ where all views are specified that will be loaded in the experiment
 All stimuli-related code/data is is stored in 'stimuli/'.
 - img/
 contains all images used in the experiment. Subfolders group1/group2 contain the
-test-stimuli, with antecedent-block being blue/green. Pictures of train stimuli
-are stored in 'train'-folder.
+test-stimuli, with antecedent-block being blue, respectively green.
 
 - 01_config.js
 This is the file where all configurations of the generated scenes are set,
