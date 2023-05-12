@@ -1,5 +1,5 @@
 # QUD-CP
-This repository contains all code and data from our first Experiment in our paper 
+This repository contains all code and data from our first Experiment in our paper
 [`Testing the influence of QUDs on the occurrence of conditional perfection` ](https://journals.linguisticsociety.org/proceedings/index.php/ELM/article/view/5413).
 
 
@@ -8,13 +8,12 @@ This repository contains all code and data from our first Experiment in our pape
 1. Code Experiment
 
 - first run 'npm install' to load all necessary packages
-- then open file index.html which contains the experiment
+- then open file index.html in a browser to run the experiment locally
 
 Magpie-code for the experiment is in js-files, named according to the order how
 they are loaded in the index.html-file:
 
-- 02_custom_functions.js: mostly experiment-related functions, constants related 
-to stimuli
+- 02_custom_functions.js: mostly experiment-related functions, constants related to stimuli
 - 03_custom_views_templates.js: generate view-templates, called in 05_views.js
 - 04_trials.js: generates actual data for experiment
 - 05_views.js: generate views used in the experiment
@@ -46,7 +45,10 @@ run this file to show generated animations (set MODE in stimuli/01_config.js to
   therefore high corresponds to a short platform, the longer the platform is,
   the more the probability of the block to fall will decrease).
 
-  2. **if2ssw_xy**
+  2. **if2_xyz**
+  if2_xy: as if1_xy but with further third block on top right.
+
+  3. **if2ssw_xy**
   x corresponds to the prior probability of the antecedent-block to fall on its
   own, i.e.,by the ball on the ramp that is rolling on its own, and y
   corresponds to the prior probability of the consequent-block to fall on its
@@ -57,19 +59,10 @@ run this file to show generated animations (set MODE in stimuli/01_config.js to
   the same, as specified in stimuli/01_config.js in variable
   *IF2_POS_BLOCK_RAMP* (default: never, i.e. positioned completely on platform).
 
-  3. **independent_xy**
-  x corresponds to the prior probability of the antecedent-block (left block), y
-  to the prior probability of the consequent-block (right block) to fall on its
-  own, i.e.,by the ball on the ramp that is rolling on its own. As in if2-trials
-  the width of the base ramp is defined by the prior probability of the
-  consequent-block to fall, and its position is always the same, as specified in
-  stimuli/01_config.js in variable *IND_POS_BLOCK_RAMP* (default: never).
+  4. **independent_xy**
+  x corresponds to the prior probability of the antecedent-block (upper block), y to the prior probability of the consequent-block (lower block) to fall on its own, i.e.,by the position of the block on its platform (antecedent-block) or by the ball on the ramp that is rolling on its own (consequent-block). As in if2-trials, the width of the base ramp is defined by the prior probability of the consequent-block to fall, and the position of the consequent-block on that platform is always the same (completely on top of platform), as specified in stimuli/01_config.js in variable *IND_POS_BLOCK_RAMP* (default: never).
 
-  4. **independent_edge_xy**
+  5. **independent_edge_xy**
   x corresponds to the prior probability of the antecedent-block (left block), y
   to the prior probability of the consequent-block (right block) to fall on its
   own. Simple situations with two blocks, each on a separate platform.
-
-  5. **if2_xyz**
-  if2_xy: as if1_xy but with further third block on top right.
-

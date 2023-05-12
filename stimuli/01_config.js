@@ -1,4 +1,4 @@
-const DEBUG = false;
+const DEBUG = true;
 
 //index-stimuli.html: show only train or test stimuli independent of experiment
 //var MODE = "train"
@@ -82,11 +82,7 @@ let TRAIN_IDS = {
          'if1_ln',
          'if2_nnh',
          'if2_hnh',
-         'if2_nnl'//,
-         // 'independent_edge_nn',
-         // 'if1_u-Ln',
-         // 'if1_u-Hh',
-         // 'if2_u-Lnu-H', 'if2_u-Hnu-H', 'if2_u-Hnu-L', 'if2_u-Lnu-L',
+         'if2_nnl'
        ]
   }
 
@@ -99,6 +95,7 @@ let train_expectations = {
   'if2_hnh': ['ANT', 'CONS', 'yellow'],
   'if2_nnl': ['none'],
 
+  // other train trials that we did not use in the experiment
   'independent_edge_nn': ['none'],
   'if1_u-Ln': ['none'],
   'if1_u-Hh': ['ANT', 'CONS'],
